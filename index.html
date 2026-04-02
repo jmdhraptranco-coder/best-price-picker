@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Best Price Picker | APTRANSCO</title>
+<meta name="description" content="APTRANSCO Best Price Picker - Analyze material rates from multiple sources and determine optimal pricing using advanced algorithms.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0a0e1a;--surface:#111827;--card:#1a2236;--card-hover:#1e2a42;
+--border:#2a3450;--border-glow:rgba(59,130,246,0.3);
+--text:#e2e8f0;--text-dim:#8899b4;--text-muted:#5a6a82;
+--accent:#3b82f6;--accent-glow:rgba(59,130,246,0.15);
+--green:#10b981;--green-bg:rgba(16,185,129,0.1);
+--red:#ef4444;--orange:#f59e0b;--purple:#8b5cf6;--cyan:#06b6d4;
+--gold:#fbbf24;
+--radius:12px;--radius-lg:16px;--radius-xl:20px;
+--shadow:0 4px 24px rgba(0,0,0,0.4);
+--font:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+/* HERO */
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);border-bottom:1px solid var(--border);padding:2.5rem 2rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(59,130,246,0.06) 0%,transparent 50%);animation:heroGlow 8s ease-in-out infinite alternate}
+@keyframes heroGlow{to{transform:translate(20%,10%)}}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--accent-glow);border:1px solid rgba(59,130,246,0.25);border-radius:999px;padding:.35rem 1rem;font-size:.75rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:1rem}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#fff 0%,#93c5fd 50%,#60a5fa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px;position:relative}
+.hero p{color:var(--text-dim);font-size:1rem;margin-top:.5rem;font-weight:300}
+/* CONTAINER */
+.container{max-width:1320px;margin:0 auto;padding:2rem 1.5rem}
+/* UPLOAD */
+.upload-section{margin-bottom:2.5rem}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-xl);padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .3s ease;background:var(--surface);position:relative}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,0.15)}
+.upload-icon{font-size:3rem;margin-bottom:1rem;display:block}
+.upload-zone h3{font-size:1.1rem;font-weight:600;margin-bottom:.4rem}
+.upload-zone p{color:var(--text-dim);font-size:.85rem}
+.file-info{display:none;margin-top:1rem;padding:.75rem 1.25rem;background:var(--green-bg);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius);color:var(--green);font-size:.85rem;font-weight:500}
+.file-info.show{display:flex;align-items:center;gap:.5rem;justify-content:center}
+/* ALGO SECTION */
+.section-title{font-size:1.3rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+.section-title .icon{font-size:1.2rem}
+.algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem}
+.algo-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden}
+.algo-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--purple));transform:scaleX(0);transition:transform .3s ease;transform-origin:left}
+.algo-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow)}
+.algo-card:hover::before,.algo-card.selected::before{transform:scaleX(1)}
+.algo-card.selected{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 24px rgba(59,130,246,0.12)}
+.algo-card .algo-icon{font-size:1.8rem;margin-bottom:.6rem;display:block}
+.algo-card h4{font-size:.95rem;font-weight:700;margin-bottom:.3rem}
+.algo-card p{font-size:.75rem;color:var(--text-dim);line-height:1.5}
+.algo-card .radio{position:absolute;top:1rem;right:1rem;width:18px;height:18px;border-radius:50%;border:2px solid var(--border);transition:all .2s}
+.algo-card.selected .radio{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--card)}
+/* CALCULATE BTN */
+.calc-btn-wrap{text-align:center;margin:2rem 0}
+.calc-btn{background:linear-gradient(135deg,var(--accent),#2563eb);color:#fff;border:none;padding:1rem 3rem;border-radius:var(--radius);font-size:1rem;font-weight:700;cursor:pointer;transition:all .3s ease;letter-spacing:.5px;text-transform:uppercase;position:relative;overflow:hidden}
+.calc-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,0.35)}
+.calc-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.calc-btn::after{content:'';position:absolute;top:50%;left:50%;width:0;height:0;background:rgba(255,255,255,.15);border-radius:50%;transform:translate(-50%,-50%);transition:width .5s,height .5s}
+.calc-btn:active::after{width:300px;height:300px}
+/* RESULTS */
+#results{display:none;animation:fadeUp .6s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+/* KPI */
+.kpi-main{background:linear-gradient(135deg,#1e3a5f,#1a2744);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.5rem;text-align:center;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.kpi-main::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(59,130,246,0.08),transparent 60%)}
+.kpi-main .label{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.kpi-main .value{font-size:3rem;font-weight:900;background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:.5rem 0}
+.kpi-main .sub{font-size:1rem;color:var(--green);font-weight:600}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2.5rem}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;text-align:center}
+.kpi-card .kpi-icon{font-size:1.5rem;margin-bottom:.5rem;display:block}
+.kpi-card .kpi-val{font-size:1.6rem;font-weight:800;color:#fff}
+.kpi-card .kpi-label{font-size:.75rem;color:var(--text-dim);margin-top:.25rem;text-transform:uppercase;letter-spacing:1px}
+/* MATERIAL CARDS */
+.mat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem;margin-bottom:2.5rem}
+.mat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:all .3s}
+.mat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.mat-card-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.mat-card-head h4{font-size:.9rem;font-weight:700}
+.mat-card-best{background:var(--green-bg);color:var(--green);padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:700}
+.mat-card-body{padding:1rem 1.25rem}
+.price-group{margin-bottom:.75rem}
+.price-group-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600;margin-bottom:.4rem}
+.price-row{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.8rem}
+.price-row .src{color:var(--text-dim)}.price-row .val{font-weight:600}
+.price-row.best-price{color:var(--green);font-weight:700;background:var(--green-bg);margin:0 -.5rem;padding:.25rem .5rem;border-radius:6px}
+/* TABLE */
+.table-wrap{overflow-x:auto;margin-bottom:2.5rem;border:1px solid var(--border);border-radius:var(--radius-lg)}
+.comp-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.comp-table th{background:#151c2e;padding:.75rem .6rem;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0}
+.comp-table td{padding:.6rem;border-bottom:1px solid rgba(42,52,80,0.4);white-space:nowrap}
+.comp-table tr:hover td{background:rgba(59,130,246,0.04)}
+.comp-table .hl{background:rgba(59,130,246,0.1);color:var(--accent);font-weight:700}
+/* CHART */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;margin-bottom:2rem}
+.chart-wrap canvas{max-height:420px}
+/* FOOTER */
+.footer{text-align:center;padding:2rem;color:var(--text-muted);font-size:.75rem;border-top:1px solid var(--border)}
+/* RESPONSIVE */
+@media(max-width:768px){
+.hero h1{font-size:1.6rem}.kpi-main .value{font-size:2rem}
+.algo-grid{grid-template-columns:1fr 1fr}.mat-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){.algo-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-badge"><span class="dot"></span> APTRANSCO Procurement Intelligence</div>
+  <h1>⚡ Best Price Picker</h1>
+  <p>Analyze material rates from multiple sources and determine optimal pricing</p>
+</header>
+
+<div class="container">
+  <!-- UPLOAD -->
+  <section class="upload-section">
+    <div class="section-title"><span class="icon">📁</span> Upload Rate Data</div>
+    <div class="upload-zone" id="uploadZone">
+      <span class="upload-icon">📊</span>
+      <h3>Drop your Excel / CSV file here</h3>
+      <p>Supports .xls, .xlsx, .csv — PV Calculations SSR format</p>
+      <input type="file" id="fileInput" accept=".xls,.xlsx,.csv" hidden>
+    </div>
+    <div class="file-info" id="fileInfo">✅ <span id="fileName"></span></div>
+  </section>
+
+  <!-- ALGORITHMS -->
+  <section>
+    <div class="section-title"><span class="icon">🧮</span> Select Pricing Algorithm</div>
+    <div class="algo-grid" id="algoGrid">
+      <div class="algo-card selected" data-algo="min" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">📉</span>
+        <h4>Minimum Price</h4><p>Picks the absolute lowest price across all valid sources for each material.</p>
+      </div>
+      <div class="algo-card" data-algo="avg" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">📊</span>
+        <h4>Simple Average</h4><p>Calculates the arithmetic mean of all valid prices per material.</p>
+      </div>
+      <div class="algo-card" data-algo="wavg" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">⚖️</span>
+        <h4>Weighted Average</h4><p>SSR 40% + PO 35% + Budgetary 25% weighted combination.</p>
+      </div>
+      <div class="algo-card" data-algo="median" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">📐</span>
+        <h4>Median Price</h4><p>Middle value — robust against outlier prices in any direction.</p>
+      </div>
+      <div class="algo-card" data-algo="sigma" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">🔬</span>
+        <h4>Mean − 1σ Filter</h4><p>Removes outliers beyond ±1 standard deviation, then averages remaining.</p>
+      </div>
+      <div class="algo-card" data-algo="kmeans" onclick="selectAlgo(this)">
+        <span class="radio"></span><span class="algo-icon">🤖</span>
+        <h4>K-Means Clustering</h4><p>Groups prices into 2 clusters, selects the lower centroid value.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALCULATE -->
+  <div class="calc-btn-wrap">
+    <button class="calc-btn" id="calcBtn" disabled onclick="calculate()">⚡ Analyze &amp; Calculate Best Prices</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="section-title"><span class="icon">📋</span> Analysis Results</div>
+    <div class="kpi-main" id="kpiMain"></div>
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="section-title"><span class="icon">🏷️</span> Material-wise Breakdown</div>
+    <div class="mat-grid" id="matGrid"></div>
+    <div class="section-title"><span class="icon">📊</span> Algorithm Comparison</div>
+    <div class="table-wrap"><table class="comp-table" id="compTable"></table></div>
+    <div class="section-title"><span class="icon">📈</span> Price Trend Visualization</div>
+    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+  </div>
+</div>
+
+<footer class="footer">© 2026 APTRANSCO — Andhra Pradesh Transmission Corporation. Best Price Picker Tool.</footer>
+
+<script>
+// ===== STATE =====
+let parsedData = null;
+let selectedAlgo = 'min';
+let chartInstance = null;
+
+// ===== UPLOAD HANDLING =====
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const calcBtn = document.getElementById('calcBtn');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      parsedData = parseSheet(raw);
+      fileName.textContent = file.name + ' \u2014 ' + parsedData.materials.length + ' materials loaded';
+      fileInfo.classList.add('show');
+      calcBtn.disabled = false;
+      document.getElementById('results').style.display = 'none';
+    } catch (err) { alert('Error parsing file: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ===== PARSING =====
+function parseIndianNumber(v) {
+  if (v == null || v === '') return NaN;
+  let s = String(v).trim().replace(/[\s"]/g, '');
+  s = s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return (isNaN(n) || n === 0) ? NaN : n;
+}
+
+function classifyColumn(header) {
+  if (!header) return null;
+  const h = String(header).toLowerCase();
+  if (/formula|aptransco|tgtransco|kptcl|mpptcl|msetcl|bihar/i.test(h)) return 'ssr';
+  if (/cg|siemens|\bge\b|hitachi|budgetary/i.test(h)) return 'budgetary';
+  if (/\bpo\b|purchase/i.test(h)) return 'po';
+  return null;
+}
+
+function parseSheet(raw) {
+  const subHeaders = raw[2] || [];
+  const columns = [];
+  for (let i = 0; i < subHeaders.length; i++) {
+    const group = classifyColumn(subHeaders[i]);
+    if (group) columns.push({ index: i, name: String(subHeaders[i]).trim(), group });
+  }
+  const materials = [];
+  for (let r = 3; r < raw.length; r++) {
+    const row = raw[r];
+    const name = String(row[1] || '').trim();
+    if (!name) continue;
+    const prices = { ssr: [], budgetary: [], po: [], all: [] };
+    columns.forEach(col => {
+      const val = parseIndianNumber(row[col.index]);
+      if (!isNaN(val)) {
+        prices[col.group].push({ source: col.name, value: val });
+        prices.all.push({ source: col.name, value: val, group: col.group });
+      }
+    });
+    if (prices.all.length > 0) materials.push({ name, prices });
+  }
+  return { materials, columns };
+}
+
+// ===== ALGORITHMS =====
+function algoMin(vals) { return Math.min(...vals); }
+function algoAvg(vals) { return vals.reduce((a, b) => a + b, 0) / vals.length; }
+function algoWeightedAvg(prices) {
+  const ssrVals = prices.ssr.map(p => p.value);
+  const poVals = prices.po.map(p => p.value);
+  const budVals = prices.budgetary.map(p => p.value);
+  let num = 0, den = 0;
+  if (ssrVals.length) { num += algoAvg(ssrVals) * 0.4; den += 0.4; }
+  if (poVals.length) { num += algoAvg(poVals) * 0.35; den += 0.35; }
+  if (budVals.length) { num += algoAvg(budVals) * 0.25; den += 0.25; }
+  return den > 0 ? num / den : NaN;
+}
+function algoMedian(vals) {
+  const s = [...vals].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function algoSigma(vals) {
+  const mean = algoAvg(vals);
+  const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length);
+  const filtered = vals.filter(v => Math.abs(v - mean) <= sd);
+  return filtered.length ? algoAvg(filtered) : mean;
+}
+function algoKMeans(vals) {
+  if (vals.length <= 1) return vals[0] || NaN;
+  let c1 = Math.min(...vals), c2 = Math.max(...vals);
+  for (let iter = 0; iter < 50; iter++) {
+    const g1 = [], g2 = [];
+    vals.forEach(v => (Math.abs(v - c1) <= Math.abs(v - c2) ? g1 : g2).push(v));
+    const nc1 = g1.length ? algoAvg(g1) : c1;
+    const nc2 = g2.length ? algoAvg(g2) : c2;
+    if (Math.abs(nc1 - c1) < 0.01 && Math.abs(nc2 - c2) < 0.01) break;
+    c1 = nc1; c2 = nc2;
+  }
+  return Math.min(c1, c2);
+}
+
+function runAlgo(algo, mat) {
+  const vals = mat.prices.all.map(p => p.value);
+  if (!vals.length) return NaN;
+  switch (algo) {
+    case 'min': return algoMin(vals);
+    case 'avg': return algoAvg(vals);
+    case 'wavg': return algoWeightedAvg(mat.prices);
+    case 'median': return algoMedian(vals);
+    case 'sigma': return algoSigma(vals);
+    case 'kmeans': return algoKMeans(vals);
+  }
+}
+
+const ALGO_NAMES = {
+  min: 'Minimum', avg: 'Simple Avg', wavg: 'Weighted Avg',
+  median: 'Median', sigma: 'Mean\u22121\u03c3', kmeans: 'K-Means'
+};
+const ALGO_KEYS = Object.keys(ALGO_NAMES);
+
+// ===== SELECTION =====
+function selectAlgo(el) {
+  document.querySelectorAll('.algo-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAlgo = el.dataset.algo;
+}
+
+// ===== FORMAT =====
+function fmt(n) {
+  if (isNaN(n) || n == null) return '\u2014';
+  return '\u20b9 ' + Math.round(n).toLocaleString('en-IN');
+}
+
+// ===== CALCULATE =====
+function calculate() {
+  if (!parsedData) return;
+  const { materials } = parsedData;
+  const results = {};
+  ALGO_KEYS.forEach(algo => {
+    results[algo] = materials.map(m => runAlgo(algo, m));
+  });
+  const selResults = results[selectedAlgo];
+  const validSel = selResults.filter(v => !isNaN(v));
+  const avgBest = validSel.length ? algoAvg(validSel) : 0;
+  const allPrices = materials.flatMap(m => m.prices.all.map(p => p.value));
+  const marketHigh = Math.max(...allPrices);
+  const marketLow = Math.min(...allPrices);
+  const savings = marketHigh > 0 ? ((marketHigh - avgBest) / marketHigh * 100) : 0;
+
+  document.getElementById('kpiMain').innerHTML =
+    '<div class="label">' + ALGO_NAMES[selectedAlgo] + ' \u2014 Average Best Price</div>' +
+    '<div class="value">' + fmt(avgBest) + '</div>' +
+    '<div class="sub">\u2193 ' + savings.toFixed(1) + '% savings vs market high</div>';
+
+  document.getElementById('kpiRow').innerHTML =
+    '<div class="kpi-card"><span class="kpi-icon">\ud83d\udcb0</span><div class="kpi-val">' + fmt(marketLow) + '</div><div class="kpi-label">Lowest Rate Found</div></div>' +
+    '<div class="kpi-card"><span class="kpi-icon">\ud83d\udce6</span><div class="kpi-val">' + materials.length + '</div><div class="kpi-label">Materials Analyzed</div></div>' +
+    '<div class="kpi-card"><span class="kpi-icon">\ud83d\udcc8</span><div class="kpi-val">' + fmt(marketHigh) + '</div><div class="kpi-label">Highest Market Rate</div></div>';
+
+  var matHtml = '';
+  materials.forEach(function(m, i) {
+    var bestVal = selResults[i];
+    var bestSrc = !isNaN(bestVal) ? m.prices.all.reduce(function(best, p) {
+      return Math.abs(p.value - bestVal) < Math.abs(best.value - bestVal) ? p : best;
+    }, m.prices.all[0]) : null;
+    matHtml += '<div class="mat-card"><div class="mat-card-head"><h4>' + m.name + '</h4>' +
+      '<span class="mat-card-best">' + fmt(bestVal) + '</span></div><div class="mat-card-body">';
+    ['ssr', 'budgetary', 'po'].forEach(function(g) {
+      if (m.prices[g].length) {
+        var label = g === 'ssr' ? 'SSR Values' : g === 'budgetary' ? 'Budgetary Offers' : 'Purchase Orders';
+        matHtml += '<div class="price-group"><div class="price-group-label">' + label + '</div>';
+        m.prices[g].forEach(function(p) {
+          var isBest = bestSrc && p.source === bestSrc.source && p.value === bestSrc.value;
+          matHtml += '<div class="price-row' + (isBest ? ' best-price' : '') + '"><span class="src">' + p.source + '</span><span class="val">' + fmt(p.value) + '</span></div>';
+        });
+        matHtml += '</div>';
+      }
+    });
+    matHtml += '</div></div>';
+  });
+  document.getElementById('matGrid').innerHTML = matHtml;
+
+  var tHtml = '<thead><tr><th>Material</th>';
+  ALGO_KEYS.forEach(function(a) { tHtml += '<th class="' + (a === selectedAlgo ? 'hl' : '') + '">' + ALGO_NAMES[a] + '</th>'; });
+  tHtml += '</tr></thead><tbody>';
+  materials.forEach(function(m, i) {
+    tHtml += '<tr><td>' + m.name + '</td>';
+    ALGO_KEYS.forEach(function(a) { tHtml += '<td class="' + (a === selectedAlgo ? 'hl' : '') + '">' + fmt(results[a][i]) + '</td>'; });
+    tHtml += '</tr>';
+  });
+  tHtml += '<tr style="font-weight:700;border-top:2px solid var(--border)"><td>AVERAGE</td>';
+  ALGO_KEYS.forEach(function(a) {
+    var valid = results[a].filter(function(v) { return !isNaN(v); });
+    tHtml += '<td class="' + (a === selectedAlgo ? 'hl' : '') + '">' + fmt(valid.length ? algoAvg(valid) : NaN) + '</td>';
+  });
+  tHtml += '</tr></tbody>';
+  document.getElementById('compTable').innerHTML = tHtml;
+
+  if (chartInstance) chartInstance.destroy();
+  var colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
+  chartInstance = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: {
+      labels: materials.map(function(m) { return m.name.length > 25 ? m.name.slice(0, 22) + '\u2026' : m.name; }),
+      datasets: ALGO_KEYS.map(function(a, idx) {
+        return {
+          label: ALGO_NAMES[a], data: results[a],
+          borderColor: colors[idx], backgroundColor: colors[idx] + '22',
+          borderWidth: a === selectedAlgo ? 3.5 : 1.5,
+          pointRadius: a === selectedAlgo ? 5 : 3,
+          tension: 0.3, fill: a === selectedAlgo
+        };
+      })
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', font: { family: 'Inter' } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + fmt(ctx.parsed.y); } } }
+      },
+      scales: {
+        x: { ticks: { color: '#8899b4', font: { size: 10 } }, grid: { color: '#1e2a42' } },
+        y: { ticks: { color: '#8899b4', callback: function(v) { return '\u20b9' + (v / 100000).toFixed(1) + 'L'; } }, grid: { color: '#1e2a42' } }
+      }
+    }
+  });
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
